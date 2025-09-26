@@ -15,6 +15,7 @@ import retrofit2.converter.moshi.MoshiConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Query
 import android.widget.ImageView
+import com.example.lab_week_05.model.ImageData
 
 class MainActivity : AppCompatActivity() {
 
@@ -58,32 +59,43 @@ class MainActivity : AppCompatActivity() {
 
     private fun getCatImageResponse() {
         val call = catApiService.searchImages(1, "full")
-        call.enqueue(object : Callback<List<ImageData>> {
+        call.enqueue(object: Callback<List<ImageData>> {
             override fun onFailure(call: Call<List<ImageData>>, t: Throwable) {
                 Log.e(MAIN_ACTIVITY, "Failed to get response", t)
-                apiResponseView.text = "Error: ${t.message}"
             }
 
-            override fun onResponse(call: Call<List<ImageData>>, response: Response<List<ImageData>>) {
+            override fun onResponse(
+                call: Call<List<ImageData>>,
+                response: Response<List<ImageData>>
+            ) {
                 if (response.isSuccessful) {
-                    val images = response.body()
-                    val firstImageUrl = images?.firstOrNull()?.url.orEmpty()
+                    val image = response.body()
+                    val firstImage = image?.firstOrNull()
 
-                    if (firstImageUrl.isNotBlank()) {
-                        imageLoader.loadImage(firstImageUrl, imageResultView)
-                        apiResponseView.text = "Image loaded successfully!"
+                    // Ambil URL
+                    val imageUrl = firstImage?.imageUrl.orEmpty()
+
+                    // Ambil breed atau Unknown
+                    val breedName = firstImage?.breeds?.firstOrNull()?.name ?: "Unknown"
+
+                    if (imageUrl.isNotBlank()) {
+                        imageLoader.loadImage(imageUrl, imageResultView)
                     } else {
-                        apiResponseView.text = "No image URL found"
                         Log.d(MAIN_ACTIVITY, "Missing image URL")
                     }
+
+                    // Tampilkan nama breed
+                    apiResponseView.text = getString(R.string.image_placeholder, breedName)
                 } else {
-                    val errorMessage = "Failed to get response\n${response.errorBody()?.string().orEmpty()}"
-                    Log.e(MAIN_ACTIVITY, errorMessage)
-                    apiResponseView.text = "Error: ${response.code()}"
+                    Log.e(
+                        MAIN_ACTIVITY,
+                        "Failed to get response\n" + response.errorBody()?.string().orEmpty()
+                    )
                 }
             }
         })
     }
+
 
     companion object {
         const val MAIN_ACTIVITY = "MAIN_ACTIVITY"
