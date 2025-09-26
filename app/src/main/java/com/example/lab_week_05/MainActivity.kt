@@ -11,7 +11,7 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import retrofit2.Retrofit
-import retrofit2.converter.scalars.ScalarsConverterFactory
+import retrofit2.converter.moshi.MoshiConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Query
 
@@ -20,7 +20,7 @@ class MainActivity : AppCompatActivity() {
     private val retrofit by lazy {
         Retrofit.Builder()
             .baseUrl("https://api.thecatapi.com/v1/")
-            .addConverterFactory(ScalarsConverterFactory.create())
+            .addConverterFactory(MoshiConverterFactory.create())
             .build()
     }
 
@@ -49,15 +49,17 @@ class MainActivity : AppCompatActivity() {
 
     private fun getCatImageResponse() {
         val call = catApiService.searchImages(1, "full")
-        call.enqueue(object : Callback<String> {
-            override fun onFailure(call: Call<String>, t: Throwable) {
+        call.enqueue(object : Callback<List<ImageData>> {
+            override fun onFailure(call: Call<List<ImageData>>, t: Throwable) {
                 Log.e(MAIN_ACTIVITY, "Failed to get response", t)
                 apiResponseView.text = "Error: ${t.message}"
             }
 
-            override fun onResponse(call: Call<String>, response: Response<String>) {
+            override fun onResponse(call: Call<List<ImageData>>, response: Response<List<ImageData>>) {
                 if (response.isSuccessful) {
-                    apiResponseView.text = response.body()
+                    val images = response.body()
+                    val firstImage = images?.firstOrNull()?.url ?: "No URL"
+                    apiResponseView.text = "Image URL: $firstImage"
                 } else {
                     val errorMessage = "Failed to get response\n${response.errorBody()?.string().orEmpty()}"
                     Log.e(MAIN_ACTIVITY, errorMessage)
@@ -72,10 +74,18 @@ class MainActivity : AppCompatActivity() {
     }
 }
 
+// Data class untuk response API
+data class ImageData(
+    val id: String,
+    val url: String,
+    val width: Int,
+    val height: Int
+)
+
 interface CatApiService {
     @GET("images/search")
     fun searchImages(
         @Query("limit") limit: Int,
         @Query("size") size: String
-    ): Call<String>
+    ): Call<List<ImageData>>
 }
