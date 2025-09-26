@@ -14,6 +14,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Query
+import android.widget.ImageView
 
 class MainActivity : AppCompatActivity() {
 
@@ -31,6 +32,14 @@ class MainActivity : AppCompatActivity() {
     private val apiResponseView: TextView by lazy {
         findViewById(R.id.api_response)
     }
+
+    private val imageResultView: ImageView by lazy {
+        findViewById(R.id.image_result)
+    }
+    private val imageLoader: ImageLoader by lazy {
+        GlideLoader(this)
+    }
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -58,8 +67,15 @@ class MainActivity : AppCompatActivity() {
             override fun onResponse(call: Call<List<ImageData>>, response: Response<List<ImageData>>) {
                 if (response.isSuccessful) {
                     val images = response.body()
-                    val firstImage = images?.firstOrNull()?.url ?: "No URL"
-                    apiResponseView.text = "Image URL: $firstImage"
+                    val firstImageUrl = images?.firstOrNull()?.url.orEmpty()
+
+                    if (firstImageUrl.isNotBlank()) {
+                        imageLoader.loadImage(firstImageUrl, imageResultView)
+                        apiResponseView.text = "Image loaded successfully!"
+                    } else {
+                        apiResponseView.text = "No image URL found"
+                        Log.d(MAIN_ACTIVITY, "Missing image URL")
+                    }
                 } else {
                     val errorMessage = "Failed to get response\n${response.errorBody()?.string().orEmpty()}"
                     Log.e(MAIN_ACTIVITY, errorMessage)
